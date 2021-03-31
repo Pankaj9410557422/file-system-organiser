@@ -6,73 +6,68 @@ let types = {
     documents: ['docx', 'doc', 'pdf', 'xlsx', 'xls', 'odt', 'ods', 'odp', 'odg', 'odf', 'txt', 'ps', 'tex'],
     app: ['exe', 'dmg', 'pkg', "deb"]
 }
-function dirCreator(dirpath) {
-    if (fs.existsSync(dirpath) == false) {
-        fs.mkdirSync(dirpath);
+function organizeHelper(path) {
+    if(path == undefined){
+        path= process.cwd();
     }
+    organizeFiles(path);
+    console.log("organize command was implemented");
 }
-function getDirectoryName(dirpath) {
-    let strArr = dirpath.split(".");
-    let ext = strArr.pop();
-    for (let key in types) {
-        // types[type].includes(ext);
-        for (let i = 0; i < types[key].length; i++) {
-            if (types[key][i] == ext) {
-                return key;
+
+function checkExtension(src) {
+    let ext = src.split('.').pop();
+    for (let type in types) {
+        for (let i = 0; i < types[type].length; i++) {
+            if (ext == types[type][i]) {
+                return type;
             }
         }
     }
+
     return "others";
 }
-function isFileorNOt(dirpath) {
-    return fs.lstatSync(dirpath).isFile();
-}
-function listContent(dirpath) {
-    return fs.readdirSync(dirpath);
-}
-function copyFiletoFolder(dirpath, destFolder) {
-    let orgFileName = path.basename(dirpath);
-    let destFilePath = path.join(destFolder, orgFileName);
 
-    fs.copyFileSync(dirpath, destFilePath);
+function sendFile(src, dest, folderName) {
+    let folderToMake = path.join(dest, folderName);
+    if (fs.existsSync(folderToMake) == false) {
+        fs.mkdirSync(folderToMake);
+    }
+
+    let pathofdestFile = path.join(folderToMake, path.basename(src));
+    fs.copyFileSync(src, pathofdestFile);
 }
-function OrganizeDir(dirpath) {
-    // console.log(dirpath);
-    let isFile = isFileorNOt(dirpath);
+
+function readContent(src) {
+    return fs.readdirSync(src);
+}
+
+function isFileOrNot(src) {
+    return fs.lstatSync(src).isFile();
+}
+
+function organizeFiles(src) {
+    let folderToMake = path.join(src, "Organized_Files");
+    if (fs.existsSync(folderToMake) == false) {
+        fs.mkdirSync(folderToMake);
+    }
+    organize(src, folderToMake);
+}
+
+function organize(src, dest) {
+    let isFile = isFileOrNot(src);
     if (isFile == true) {
-        // identify -> dest directory 
-        // copy 
-        let folderName = getDirectoryName(dirpath);
-        // console.log(dirpath, "->", folderName);
-        // other
-        let destFolder = path.join(orgFilePath, folderName);
-        copyFiletoFolder(dirpath, destFolder);
-        // dirpath
+        let folderName = checkExtension(src);
+
+        sendFile(src, dest, folderName);
     } else {
-        
-        let content = listContent(dirpath);
-        for (let i = 0; i < content.length; i++) {
-            // f10/f1.txt
-            // let childPath = dirpath + "\\" + content[i];
-            let childPath = path.join(dirpath, content[i]);
-            OrganizeDir(childPath);
+        let fDirnames = readContent(src);
+        for (let i = 0; i < fDirnames.length; i++) {
+            let child = fDirnames[i];
+            organize(path.join(src, child), dest);
         }
     }
 }
-function OrganizeFn(dirpath) {
-    let orgFilePath = path.join(dirpath, "organized_files")
-    dirCreator(orgFilePath);
-    for (let key in types) {
-        let innerdirPath = path.join(orgFilePath, key);
-        dirCreator(innerdirPath)
-    }
-    // others 
-    let otherPath = path.join(orgFilePath, "others");
 
-    dirCreator(otherPath);
-
-    OrganizeDir(dirpath);
-}
 module.exports = {
-    organizeFn: OrganizeFn
+    organizeFn:organizeHelper
 }
